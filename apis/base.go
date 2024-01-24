@@ -18,7 +18,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/rest"
 	"github.com/pocketbase/pocketbase/ui"
-	"./webapp"
+	"github.com/zeet2020/pocketbase/webapp"
 	"github.com/spf13/cast"
 )
 
