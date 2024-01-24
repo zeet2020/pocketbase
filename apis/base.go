@@ -18,10 +18,12 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/rest"
 	"github.com/pocketbase/pocketbase/ui"
+	"./webapp"
 	"github.com/spf13/cast"
 )
 
 const trailedAdminPath = "/_/"
+const trailedAppPath = "/app/"
 
 // InitApi creates a configured echo instance with registered
 // system and app specific routes and middlewares.
@@ -171,12 +173,20 @@ func StaticDirectoryHandler(fileSystem fs.FS, indexFallback bool) echo.HandlerFu
 // bindStaticAdminUI registers the endpoints that serves the static admin UI.
 func bindStaticAdminUI(app core.App, e *echo.Echo) error {
 	// redirect to trailing slash to ensure that relative urls will still work properly
+	//trailedAppPath
 	e.GET(
 		strings.TrimRight(trailedAdminPath, "/"),
 		func(c echo.Context) error {
 			return c.Redirect(http.StatusTemporaryRedirect, strings.TrimLeft(trailedAdminPath, "/"))
 		},
 	)
+
+	e.GET(
+		strings.TrimRight(trailedAppPath, "/"),
+		func(c echo.Context) error {
+			return c.Redirect(http.StatusTemporaryRedirect, strings.TrimLeft(trailedAppPath, "/"))
+		},
+		)
 
 	// serves static files from the /ui/dist directory
 	// (similar to echo.StaticFS but with gzip middleware enabled)
@@ -188,6 +198,14 @@ func bindStaticAdminUI(app core.App, e *echo.Echo) error {
 		middleware.Gzip(),
 	)
 
+	e.GET(
+		trailedAppPath+"*",
+		echo.StaticDirectoryHandler(webapp.DistDirFS, false),
+		installerRedirect(app),
+		uiCacheControl(),
+		middleware.Gzip(),
+		)
+
 	return nil
 }
 
@@ -197,6 +215,10 @@ func uiCacheControl() echo.MiddlewareFunc {
 			// add default Cache-Control header for all Admin UI resources
 			// (ignoring the root admin path)
 			if c.Request().URL.Path != trailedAdminPath {
+				c.Response().Header().Set("Cache-Control", "max-age=1209600, stale-while-revalidate=86400")
+			}
+
+			if c.Request().URL.Path != trailedAppPath {
 				c.Response().Header().Set("Cache-Control", "max-age=1209600, stale-while-revalidate=86400")
 			}
 
